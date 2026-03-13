@@ -23,7 +23,7 @@ Your agent initiates the call, the avatar speaks first with context, and after t
 ## Install as an OpenClaw skill
 
 ```bash
-openclaw skill install github:yiningshi/openclaw-skills/video-call-ai-character
+openclaw skill install github:runwayml/openclaw-skills/video-call-ai-character
 ```
 
 ## Requirements
@@ -47,7 +47,7 @@ The server starts on `http://localhost:7891` and auto-creates a Cloudflare tunne
 ## Development
 
 ```bash
-git clone https://github.com/yiningshi/openclaw-skills.git
+git clone https://github.com/runwayml/openclaw-skills.git
 cd openclaw-skills/video-call-ai-character
 npm install
 export RUNWAYML_API_SECRET=your_key
