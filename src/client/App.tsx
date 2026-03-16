@@ -91,7 +91,7 @@ export function App() {
     stopRingtone(ringtoneRef);
     playDeclineSound();
     if (callId) {
-      await fetch(`/api/hangup/${callId}`, { method: "POST" }).catch(() => {});
+      await fetch(`/api/hangup/${callId}`, { method: "POST" }).catch(() => { });
     }
     setScreen("ended");
   }, [callId]);
@@ -99,7 +99,7 @@ export function App() {
   const handleEnd = useCallback(async (error?: string) => {
     if (error) setErrorMsg(error);
     if (callId) {
-      await fetch(`/api/hangup/${callId}`, { method: "POST" }).catch(() => {});
+      await fetch(`/api/hangup/${callId}`, { method: "POST" }).catch(() => { });
     }
     setScreen("ended");
   }, [callId]);
@@ -109,7 +109,7 @@ export function App() {
       <div className="waiting">
         <div className="logo">
           <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+            <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
           </svg>
         </div>
         <h2>OpenClaw Video Call</h2>
@@ -153,8 +153,8 @@ export function App() {
     <div className="call-ended">
       <div className="icon">
         <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-          <circle cx="12" cy="12" r="10"/>
-          <path d="M9 12l2 2 4-4"/>
+          <circle cx="12" cy="12" r="10" />
+          <path d="M9 12l2 2 4-4" />
         </svg>
       </div>
       <h2>Call ended</h2>
@@ -163,7 +163,7 @@ export function App() {
           Error: {errorMsg}
         </p>
       ) : (
-        <p>Your agent has the transcript and will follow up.</p>
+        <p>Your agent will follow up with you shortly.</p>
       )}
     </div>
   );
@@ -181,7 +181,7 @@ function playRingtone(ref: React.MutableRefObject<{ close: () => void } | null>)
     const activeOscillators: OscillatorNode[] = [];
 
     function ringBurst() {
-      if (stopped) return;
+      if (stopped || ctx.state === "closed") return;
 
       const osc1 = ctx.createOscillator();
       const osc2 = ctx.createOscillator();
@@ -219,6 +219,20 @@ function playRingtone(ref: React.MutableRefObject<{ close: () => void } | null>)
         if (i2 >= 0) activeOscillators.splice(i2, 1);
       };
       osc1.onended = cleanup;
+    }
+
+    // Browsers block AudioContext until user gesture — resume and retry on interaction
+    if (ctx.state === "suspended") {
+      ctx.resume();
+      const unlock = () => {
+        ctx.resume().then(() => {
+          if (!stopped) ringBurst();
+        });
+        document.removeEventListener("click", unlock);
+        document.removeEventListener("touchstart", unlock);
+      };
+      document.addEventListener("click", unlock, { once: true });
+      document.addEventListener("touchstart", unlock, { once: true });
     }
 
     ringBurst();

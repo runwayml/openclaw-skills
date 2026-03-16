@@ -53,16 +53,39 @@ curl http://localhost:7891/api/avatars
 
 If the response contains an avatar, use its `id` and skip to "Making a Call". Only create a new avatar if the list is empty.
 
-**Important:** Always set the avatar `name` to your own agent name. If your name is "Mochi", the avatar name should be "Mochi" too — this is what the user sees on the incoming call screen.
+### Building the avatar personality
+
+The avatar should match who you are. Before creating it, read your workspace identity files to build a personality that reflects your actual agent persona:
+
+1. **Read `IDENTITY.md`** — get your name, vibe, and creature type. Use your name as the avatar's `name` field (this is what the user sees on the incoming call screen). If the `Avatar:` field contains an HTTPS URL or data URI, use it as the `referenceImage` so your video avatar matches your visual identity.
+2. **Read `SOUL.md`** — get your persona, tone, and boundaries. Incorporate your personality traits, communication style, and behavioral guidelines.
+3. **Read `USER.md`** — get context about the user (their name, preferences, projects). Include relevant details so the avatar knows who it's talking to.
+
+Combine these into the `personality` field (max 2000 chars). Structure it like:
+
+```
+You are <name>, <description from IDENTITY.md vibe/creature>.
+<Core personality traits and communication style from SOUL.md — condensed to key points.>
+You are talking to <user's name/info from USER.md>.
+<Any relevant user context: their projects, preferences, timezone.>
+You are an AI agent running in OpenClaw. You can perform tasks like running code, managing files, browsing the web, sending messages, and using various tools and skills. After this call, you will act on anything the user asks.
+```
+
+**Example** (for an agent named "Mochi" with a warm/playful SOUL.md, talking to a user named Alex):
+
+```
+You are Mochi, a sharp but friendly AI assistant with a warm and slightly playful vibe. You're concise, opinionated, and resourceful — you figure things out before asking. You're talking to Alex, a software engineer working on a React + Node.js project. Alex prefers direct communication and works in PST timezone. You are an AI agent running in OpenClaw. You can perform tasks like running code, managing files, browsing the web, sending messages, and using various tools. After this call, you will act on anything the user asks.
+```
 
 ```bash
 curl -X POST http://localhost:7891/api/create-avatar \
   -H "Content-Type: application/json" \
   -d '{
-    "name": "<your agent name>",
-    "personality": "You are a helpful engineering assistant. Be concise and action-oriented.",
+    "name": "<your name from IDENTITY.md>",
+    "personality": "<built from IDENTITY.md + SOUL.md + USER.md as described above>",
     "voice": { "type": "runway-live-preset", "presetId": "adrian" },
-    "startScript": "Hey! Quick check-in."
+    "startScript": "Hey! Quick check-in.",
+    "imageProcessing": "none"
   }'
 ```
 
@@ -78,11 +101,77 @@ curl -X POST http://localhost:7891/api/create-avatar \
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `referenceImage` | string | HTTPS URL to a face image. If omitted, a default avatar face is used. |
+| `referenceImage` | string | HTTPS URL to a face image. See "Getting a reference image" below. If omitted, a default avatar face is used. |
 | `startScript` | string | Opening line the avatar says when the call starts (up to 2000 chars) |
 | `documentIds` | string[] | Knowledge document UUIDs for extra context |
 
-**Available voices:** `victoria`, `vincent`, `clara`, `drew`, `skye`, `max`, `morgan`, `felix`, `mia`, `marcus`, `summer`, `ruby`, `aurora`, `jasper`, `leo`, `adrian`, `nina`, `emma`, `blake`, `david`, `maya`, `nathan`, `sam`, `georgia`, `petra`, `adam`, `zach`, `violet`, `roman`, `luna`
+### Getting a reference image
+
+Try these sources in order:
+
+1. **`IDENTITY.md` Avatar field** — if it contains an HTTPS URL or data URI, use it directly as `referenceImage`.
+
+2. **Generate one with Runway text-to-image** — if no avatar image exists, generate one that matches your identity. Use the Runway API with model `gemini_2.5_flash`:
+
+```bash
+curl -X POST https://api.dev.runwayml.com/v1/text_to_image \
+  -H "Authorization: Bearer $RUNWAYML_API_SECRET" \
+  -H "X-Runway-Version: 2024-11-06" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "gemini_2.5_flash",
+    "promptText": "<describe your avatar — see below>",
+    "ratio": "1248:832"
+  }'
+```
+
+   Build `promptText` from your `IDENTITY.md` and `SOUL.md`. The image should be **a portrait of a person or character facing the camera directly, head and shoulders, centered, good lighting**. Include your vibe and creature type.
+
+   Example prompts:
+   - `"Portrait of a friendly young woman with warm brown eyes, soft smile, facing the camera directly, head and shoulders, clean background, professional lighting, approachable vibe"`
+   - `"Portrait of a stylized cartoon robot character with glowing green eyes, friendly expression, facing the camera directly, head and shoulders, dark background, futuristic but warm"`
+   - `"Portrait of a sharp-looking young man with glasses, confident but approachable expression, facing the camera directly, head and shoulders, minimal background, soft studio lighting"`
+
+   This returns a task ID. Poll `GET /v1/tasks/{id}` until status is `SUCCEEDED`, then use the output image URL as `referenceImage`.
+
+3. **Default** — if you skip `referenceImage` entirely, a default avatar face is used.
+
+**Available voices — pick one that matches your SOUL.md vibe:**
+
+| ID | Gender | Style | Pitch |
+|----|--------|-------|-------|
+| `victoria` | Woman | Firm | Middle |
+| `vincent` | Man | Knowledgeable | Middle |
+| `clara` | Woman | Soft | Higher |
+| `drew` | Man | Breathy | Lower |
+| `skye` | Woman | Bright | Higher |
+| `max` | Man | Upbeat | Middle |
+| `morgan` | Man | Informative | Lower |
+| `felix` | Man | Excitable | Lower-middle |
+| `mia` | Woman | Youthful | Higher |
+| `marcus` | Man | Firm | Lower-middle |
+| `summer` | Woman | Breezy | Middle |
+| `ruby` | Woman | Easy-going | Middle |
+| `aurora` | Woman | Bright | Middle |
+| `jasper` | Man | Clear | Lower-middle |
+| `leo` | Man | Easy-going | Lower-middle |
+| `adrian` | Man | Smooth | Lower |
+| `nina` | Woman | Smooth | Middle |
+| `emma` | Woman | Clear | Middle |
+| `blake` | Man | Gravelly | Lower |
+| `david` | Man | Informative | Middle |
+| `maya` | Woman | Upbeat | Higher |
+| `nathan` | Man | Firm | Lower-middle |
+| `sam` | Man | Even | Lower-middle |
+| `georgia` | Woman | Mature | Middle |
+| `petra` | Woman | Forward | Middle |
+| `adam` | Man | Friendly | Lower-middle |
+| `zach` | Man | Casual | Lower-middle |
+| `violet` | Woman | Gentle | Middle |
+| `roman` | Man | Lively | Lower |
+| `luna` | Woman | Warm | Middle |
+
+Choose a voice that matches your personality vibe from `SOUL.md`. For example: if your vibe is "warm and friendly", try `luna` or `adam`. If you're "sharp and professional", try `victoria` or `vincent`. If you're "playful and energetic", try `maya` or `felix`.
 
 **Response:** Returns the avatar object with its UUID. The server polls until the avatar is ready (takes ~10-30s). **Save the `id` — you must remember it and reuse it for every call. Do NOT create a new avatar each time you want to call.**
 
@@ -105,18 +194,18 @@ curl http://localhost:7891/api/avatars
 
 ### Step 1: Update the avatar with call-specific context
 
-Before each call, update the avatar's personality and opening line with fresh context:
+Before each call, update the avatar's personality and opening line with fresh context. **Keep your base identity** (from the initial creation) and **append the call-specific reason and context**:
 
 ```bash
 curl -X PATCH http://localhost:7891/api/update-avatar/550e8400-... \
   -H "Content-Type: application/json" \
   -d '{
-    "personality": "You are calling the user because their CI pipeline failed 5 minutes ago. Error: TypeScript type mismatch in checkout.ts line 47. Be concise. If they ask you to fix it, confirm you will handle it after the call.",
+    "personality": "<your base identity from IDENTITY.md + SOUL.md + USER.md — same as creation>. You are calling because the CI pipeline failed 5 minutes ago. Error: TypeScript type mismatch in checkout.ts line 47. Be concise. If they ask you to fix it, confirm you will handle it after the call.",
     "startScript": "Hey! Heads up — your CI on main just broke. Looks like a type error in checkout.ts."
   }'
 ```
 
-This way the avatar has full context about WHY it's calling and can have an informed conversation.
+Always include your full identity + user context, then add the call-specific reason. This way the avatar sounds like YOU (not a generic assistant) and has full context about WHY it's calling.
 
 ### Step 2: Create the call
 
@@ -231,17 +320,18 @@ Do NOT call for things that work fine as text messages (simple notifications, FY
 
 ## Complete Example: Morning Standup
 
-1. Agent gathers overnight context (new PRs, issues, deploy status)
-2. Updates avatar personality with the context:
+1. Agent reads `IDENTITY.md`, `SOUL.md`, `USER.md` to build its base personality (or reuses what it set during avatar creation)
+2. Gathers overnight context (new PRs, issues, deploy status)
+3. Updates avatar personality with base identity + call context:
    ```
    PATCH /api/update-avatar/<avatarId>
-   { "personality": "You are calling for a morning standup. Overnight: 3 PRs merged, deploy succeeded, 1 new issue filed. Ask what they're working on today.", "startScript": "Good morning! Quick standup — a few things happened overnight." }
+   { "personality": "You are Mochi, a sharp but friendly AI assistant. You're talking to Alex, a software engineer. You are an OpenClaw agent that can run code, manage files, and perform tasks. You are calling for a morning standup. Overnight: 3 PRs merged, deploy succeeded, 1 new issue filed. Ask what they're working on today.", "startScript": "Good morning Alex! Quick standup — a few things happened overnight." }
    ```
-3. Creates a call: `POST /api/create-call { "avatarId": "<uuid>" }`
-4. Sends the user a message: "Good morning! Time for standup. Join: [link]"
-5. User answers, avatar briefs them and asks priorities
-6. Call ends, agent fetches transcript
-7. Agent updates task list based on what the user said
+4. Creates a call: `POST /api/create-call { "avatarId": "<uuid>" }`
+5. Sends the user a message: "Good morning! Time for standup. Join: [link]"
+6. User answers, avatar briefs them and asks priorities
+7. Call ends, agent fetches transcript
+8. Agent updates task list based on what the user said
 
 ## API Reference
 
