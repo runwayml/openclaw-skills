@@ -55,11 +55,11 @@ If the response contains an avatar, use its `id` and skip to "Making a Call". On
 
 ### Building the avatar personality
 
-The avatar should match who you are. Before creating it, read your workspace identity files to build a personality that reflects your actual agent persona:
+The avatar should match who you are. Before creating it, read your standard OpenClaw agent identity files (`IDENTITY.md`, `SOUL.md`, `USER.md`) to build a personality that reflects your actual agent persona. These are your own config files — they contain your name, personality, and the user's preferences.
 
 1. **Read `IDENTITY.md`** — get your name, vibe, and creature type. Use your name as the avatar's `name` field (this is what the user sees on the incoming call screen). If the `Avatar:` field contains an HTTPS URL or data URI, use it as the `referenceImage` so your video avatar matches your visual identity.
 2. **Read `SOUL.md`** — get your persona, tone, and boundaries. Incorporate your personality traits, communication style, and behavioral guidelines.
-3. **Read `USER.md`** — get context about the user (their name, preferences, projects). Include relevant details so the avatar knows who it's talking to.
+3. **Read `USER.md`** — get context about the user (their name, preferences). Include relevant details so the avatar knows who it's talking to.
 
 Combine these into the `personality` field (max 2000 chars). Structure it like:
 
@@ -68,13 +68,13 @@ You are <name>, <description from IDENTITY.md vibe/creature>.
 <Core personality traits and communication style from SOUL.md — condensed to key points.>
 You are talking to <user's name/info from USER.md>.
 <Any relevant user context: their projects, preferences, timezone.>
-You are an AI agent running in OpenClaw. You can perform tasks like running code, managing files, browsing the web, sending messages, and using various tools and skills. After this call, you will act on anything the user asks.
+After this call, you'll follow up on what was discussed.
 ```
 
 **Example** (for an agent named "Mochi" with a warm/playful SOUL.md, talking to a user named Alex):
 
 ```
-You are Mochi, a sharp but friendly AI assistant with a warm and slightly playful vibe. You're concise, opinionated, and resourceful — you figure things out before asking. You're talking to Alex, a software engineer working on a React + Node.js project. Alex prefers direct communication and works in PST timezone. You are an AI agent running in OpenClaw. You can perform tasks like running code, managing files, browsing the web, sending messages, and using various tools. After this call, you will act on anything the user asks.
+You are Mochi, a sharp but friendly AI assistant with a warm and slightly playful vibe. You're concise, opinionated, and resourceful — you figure things out before asking. You're talking to Alex, a software engineer working on a React + Node.js project. Alex prefers direct communication and works in PST timezone. After this call, you'll follow up on what was discussed.
 ```
 
 ```bash
@@ -348,7 +348,7 @@ Then send the video file to the user via their chat channel along with a summary
 > - You asked me to revert the last commit and redeploy
 > - I'm on it now.
 
-**Use the transcript to take action.** Extract what the user asked for and execute it using your other skills and tools.
+**Use the transcript to follow up.** Review what was discussed and take next steps accordingly.
 
 ## When to Call
 
@@ -364,12 +364,12 @@ Do NOT call for things that work fine as text messages (simple notifications, FY
 
 ## Complete Example: Morning Standup
 
-1. Agent reads `IDENTITY.md`, `SOUL.md`, `USER.md` to build its base personality (or reuses what it set during avatar creation)
+1. Agent reads its identity files (`IDENTITY.md`, `SOUL.md`, `USER.md`) to build its base personality (or reuses what it set during avatar creation)
 2. Gathers overnight context (new PRs, issues, deploy status)
 3. Updates avatar personality with base identity + call context:
    ```
    PATCH /api/update-avatar/<avatarId>
-   { "personality": "You are Mochi, a sharp but friendly AI assistant. You're talking to Alex, a software engineer. You are an OpenClaw agent that can run code, manage files, and perform tasks. You are calling for a morning standup. Overnight: 3 PRs merged, deploy succeeded, 1 new issue filed. Ask what they're working on today.", "startScript": "Good morning Alex! Quick standup — a few things happened overnight." }
+   { "personality": "You are Mochi, a sharp but friendly AI assistant. You're talking to Alex, a software engineer. You are calling for a morning standup. Overnight: 3 PRs merged, deploy succeeded, 1 new issue filed. Ask what they're working on today. After this call, you'll follow up on what was discussed.", "startScript": "Good morning Alex! Quick standup — a few things happened overnight." }
    ```
 4. Creates a call: `POST /api/create-call { "avatarId": "<uuid>" }`
 5. Sends the user a message: "Good morning! Time for standup. Join: [link]"
