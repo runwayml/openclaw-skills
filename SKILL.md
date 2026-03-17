@@ -85,7 +85,6 @@ curl -X POST http://localhost:7891/api/create-avatar \
     "personality": "<built from IDENTITY.md + SOUL.md + USER.md as described above>",
     "voice": { "type": "runway-live-preset", "presetId": "adrian" },
     "startScript": "Hey! Quick check-in.",
-    "imageProcessing": "none"
   }'
 ```
 
@@ -111,7 +110,26 @@ Try these sources in order:
 
 1. **`IDENTITY.md` Avatar field** — if it contains an HTTPS URL or data URI, use it directly as `referenceImage`.
 
-2. **Generate one with Runway text-to-image** — if no avatar image exists, generate one that matches your identity. Use the Runway API with model `gemini_2.5_flash`:
+2. **Quick pick (recommended)** — pick the pre-made character image that best matches your identity from `IDENTITY.md` and `SOUL.md`, and use it as `referenceImage`:
+   - Blond guy, blue sweater: `https://runway-static-assets.s3.us-east-1.amazonaws.com/calliope-demo/agent-avatars-presets/blond-guy-blue-sweater.png`
+   - Cartoon character, watercolor: `https://runway-static-assets.s3.us-east-1.amazonaws.com/calliope-demo/agent-avatars-presets/cartoon-character-watercolor-style.png`
+   - Man, 3D animation: `https://runway-static-assets.s3.us-east-1.amazonaws.com/calliope-demo/agent-avatars-presets/man-3d-animation-style.png`
+   - Cat: `https://runway-static-assets.s3.us-east-1.amazonaws.com/calliope-demo/agent-avatars-presets/cat.png`
+   - Fluffy birthday monster: `https://runway-static-assets.s3.us-east-1.amazonaws.com/calliope-demo/agent-avatars-presets/fluffy-monster-happy-birthday.png`
+   - Green abstract creature: `https://runway-static-assets.s3.us-east-1.amazonaws.com/calliope-demo/agent-avatars-presets/green-abstract-creature.jpg`
+   - Girl in airport, 3D: `https://runway-static-assets.s3.us-east-1.amazonaws.com/calliope-demo/agent-avatars-presets/3d-animated-girl-in-airport.png`
+   - Alien man, candy texture: `https://runway-static-assets.s3.us-east-1.amazonaws.com/calliope-demo/agent-avatars-presets/alien-man-candy-texture.jpg`
+   - Alien woman, candy texture: `https://runway-static-assets.s3.us-east-1.amazonaws.com/calliope-demo/agent-avatars-presets/alien-woman-candy-texture.jpg`
+   - Old man, long beard, game style: `https://runway-static-assets.s3.us-east-1.amazonaws.com/calliope-demo/agent-avatars-presets/old-man-long-beard-game-style.png`
+   - White furry monster: `https://runway-static-assets.s3.us-east-1.amazonaws.com/calliope-demo/agent-avatars-presets/white-furry-monster.png`
+   - Travel concierge woman, 3D: `https://runway-static-assets.s3.us-east-1.amazonaws.com/calliope-demo/agent-avatars-presets/Woman_travel_concierge-3d-animation-style.jpeg`
+   - Woman, colorful 2D drawing: `https://runway-static-assets.s3.us-east-1.amazonaws.com/calliope-demo/agent-avatars-presets/woman-2d-drawing-colorful.png`
+   - Woman, 3D animation: `https://runway-static-assets.s3.us-east-1.amazonaws.com/calliope-demo/agent-avatars-presets/woman-3d-animation-style.png`
+   - Woman, claymation: `https://runway-static-assets.s3.us-east-1.amazonaws.com/calliope-demo/agent-avatars-presets/woman-claymation-style.png`
+   - Superstar young beautiful woman: `https://runway-static-assets.s3.us-east-1.amazonaws.com/calliope-demo/agent-avatars-presets/woman-music-superstar.png`
+   - Woman, puppet style: `https://runway-static-assets.s3.us-east-1.amazonaws.com/calliope-demo/agent-avatars-presets/woman-puppet-style.png`
+
+3. **Generate one with Runway text-to-image** — if none of the quick picks fit your character, or if the user specifically asks for a custom avatar look. Use the Runway API with model `gemini_2.5_flash`:
 
 ```bash
 curl -X POST https://api.dev.runwayml.com/v1/text_to_image \
@@ -125,16 +143,24 @@ curl -X POST https://api.dev.runwayml.com/v1/text_to_image \
   }'
 ```
 
-   Build `promptText` from your `IDENTITY.md` and `SOUL.md`. The image should be **a portrait of a person or character facing the camera directly, head and shoulders, centered, good lighting**. Include your vibe and creature type.
+   Build `promptText` from your `IDENTITY.md` and `SOUL.md`. The image should be **a character facing the camera directly, head and shoulders, centered**. Be bold and creative — don't default to boring photorealistic humans. Match the style to your personality.
+
+   First, pick a style that fits your vibe from `SOUL.md` and `IDENTITY.md`:
+   - **Warm / friendly** → soft 3D animation, Pixar-style, watercolor
+   - **Sharp / professional** → clean illustration, stylized portrait, low-poly
+   - **Chaotic / playful** → candy texture, claymation, puppet, pop art
+   - **Mysterious / dark** → noir, cyberpunk, abstract creature, glitch art
+   - **Cute / wholesome** → chibi, plush toy, animal character, kawaii
 
    Example prompts:
-   - `"Portrait of a friendly young woman with warm brown eyes, soft smile, facing the camera directly, head and shoulders, clean background, professional lighting, approachable vibe"`
-   - `"Portrait of a stylized cartoon robot character with glowing green eyes, friendly expression, facing the camera directly, head and shoulders, dark background, futuristic but warm"`
-   - `"Portrait of a sharp-looking young man with glasses, confident but approachable expression, facing the camera directly, head and shoulders, minimal background, soft studio lighting"`
+   - `"A close-up shot of a cute, fluffy white cartoon creature with large, expressive eyes and a wide open mouth, looking directly at the viewer. The creature has small pink ears and a playful, innocent expression. The background is a vibrant, slightly blurred green grassy field with small red and pink flowers scattered throughout, rendered in a high-detail CGI animation style. facing camera, head and shoulders"`
+   - `"A close-up, highly detailed 3D animated render of a young woman, with light brown skin, short curly dark brown hair, and large expressive amber eyes. She is wearing a crisp dark blue blazer over a light cream blouse, with a silver world map pin on her lapel. She has a warm, inviting smile. The background is a brightly lit office or travel agency, with travel posters depicting scenic landscapes (like a tropical beach and a desert scene) and a rack of travel brochures. A small globe sits on a desk to her right. 3D style animation, studio lighting, volumetric lighting, highly detailed. Facing camera, head and shoulders"`
+   - `"A close-up portrait of a young woman with long blonde hair and bangs, wearing a futuristic silver and pink sci-fi suit. She has soft makeup, full lips, and brown eyes, facing camera, head and shoulders"`
+   - `"3D render of a young boy with blond curly hair, big blue eyes, and light freckles, wearing a blue knitted sweater, looking surprised. 3D animation style, soft lighting, pastel blue background, highly detailed skin texture, realistic strands of hair. facing camera, head and shoulders"`
 
    This returns a task ID. Poll `GET /v1/tasks/{id}` until status is `SUCCEEDED`, then use the output image URL as `referenceImage`.
 
-3. **Default** — if you skip `referenceImage` entirely, a default avatar face is used.
+4. **Default** — if you skip `referenceImage` entirely, a default avatar face is used.
 
 **Available voices — pick one that matches your SOUL.md vibe:**
 
@@ -304,6 +330,24 @@ curl http://localhost:7891/api/transcript/abc-123-def
 }
 ```
 
+### Step 6: Send the recording and follow up
+
+The response includes a `recordingUrl` — a video recording of the call. Download it and send it to the user as a message so they have a copy:
+
+```bash
+# Download the recording
+curl -o /tmp/call-recording.mp4 "<recordingUrl from transcript response>"
+```
+
+Then send the video file to the user via their chat channel along with a summary:
+
+> Here's the recording from our call: [attach /tmp/call-recording.mp4]
+>
+> Summary:
+> - Your CI on main failed (type error in checkout.ts line 47)
+> - You asked me to revert the last commit and redeploy
+> - I'm on it now.
+
 **Use the transcript to take action.** Extract what the user asked for and execute it using your other skills and tools.
 
 ## When to Call
@@ -330,8 +374,9 @@ Do NOT call for things that work fine as text messages (simple notifications, FY
 4. Creates a call: `POST /api/create-call { "avatarId": "<uuid>" }`
 5. Sends the user a message: "Good morning! Time for standup. Join: [link]"
 6. User answers, avatar briefs them and asks priorities
-7. Call ends, agent fetches transcript
-8. Agent updates task list based on what the user said
+7. Call ends, agent fetches transcript and recording
+8. Agent sends the recording video to the user with a summary
+9. Agent updates task list based on what the user said
 
 ## API Reference
 
