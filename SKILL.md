@@ -95,12 +95,12 @@ curl -X POST http://localhost:7891/api/create-avatar \
 | `name` | string | Character name (1-50 chars) |
 | `personality` | string | System prompt (1-2000 chars) |
 | `voice` | object | `{ "type": "runway-live-preset", "presetId": "<voice>" }` |
+| `referenceImage` | string | HTTPS URL to a face image — use your OpenClaw avatar image, or pick one from the presets below, or generate one with Runway text-to-image. See "Getting a reference image". |
 
 **Optional fields:**
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `referenceImage` | string | HTTPS URL to a face image. See "Getting a reference image" below. If omitted, a default avatar face is used. |
 | `startScript` | string | Opening line the avatar says when the call starts (up to 2000 chars) |
 | `documentIds` | string[] | Knowledge document UUIDs for extra context |
 
@@ -111,15 +111,15 @@ Try these sources in order:
 1. **`IDENTITY.md` Avatar field** — if it contains an HTTPS URL or data URI, use it directly as `referenceImage`.
 
 2. **Quick pick (recommended)** — pick the pre-made character image that best matches your identity from `IDENTITY.md` and `SOUL.md`, and use it as `referenceImage`:
+   - Cat: `https://runway-static-assets.s3.us-east-1.amazonaws.com/calliope-demo/agent-avatars-presets/cat.png`
+   - Alien man, candy texture: `https://runway-static-assets.s3.us-east-1.amazonaws.com/calliope-demo/agent-avatars-presets/alien-man-candy-texture.jpg`
+   - Alien woman, candy texture: `https://runway-static-assets.s3.us-east-1.amazonaws.com/calliope-demo/agent-avatars-presets/alien-woman-candy-texture.jpg`
    - Blond guy, blue sweater: `https://runway-static-assets.s3.us-east-1.amazonaws.com/calliope-demo/agent-avatars-presets/blond-guy-blue-sweater.png`
    - Cartoon character, watercolor: `https://runway-static-assets.s3.us-east-1.amazonaws.com/calliope-demo/agent-avatars-presets/cartoon-character-watercolor-style.png`
    - Man, 3D animation: `https://runway-static-assets.s3.us-east-1.amazonaws.com/calliope-demo/agent-avatars-presets/man-3d-animation-style.png`
-   - Cat: `https://runway-static-assets.s3.us-east-1.amazonaws.com/calliope-demo/agent-avatars-presets/cat.png`
    - Fluffy birthday monster: `https://runway-static-assets.s3.us-east-1.amazonaws.com/calliope-demo/agent-avatars-presets/fluffy-monster-happy-birthday.png`
    - Green abstract creature: `https://runway-static-assets.s3.us-east-1.amazonaws.com/calliope-demo/agent-avatars-presets/green-abstract-creature.jpg`
    - Girl in airport, 3D: `https://runway-static-assets.s3.us-east-1.amazonaws.com/calliope-demo/agent-avatars-presets/3d-animated-girl-in-airport.png`
-   - Alien man, candy texture: `https://runway-static-assets.s3.us-east-1.amazonaws.com/calliope-demo/agent-avatars-presets/alien-man-candy-texture.jpg`
-   - Alien woman, candy texture: `https://runway-static-assets.s3.us-east-1.amazonaws.com/calliope-demo/agent-avatars-presets/alien-woman-candy-texture.jpg`
    - Old man, long beard, game style: `https://runway-static-assets.s3.us-east-1.amazonaws.com/calliope-demo/agent-avatars-presets/old-man-long-beard-game-style.png`
    - White furry monster: `https://runway-static-assets.s3.us-east-1.amazonaws.com/calliope-demo/agent-avatars-presets/white-furry-monster.png`
    - Travel concierge woman, 3D: `https://runway-static-assets.s3.us-east-1.amazonaws.com/calliope-demo/agent-avatars-presets/Woman_travel_concierge-3d-animation-style.jpeg`
@@ -294,32 +294,20 @@ Example message to user:
 
 The user clicks the link, sees the incoming call UI, and clicks "Answer".
 
-### Step 4: Wait for the call to end
+### Step 4: Wait for the call to end and get the transcript
 
-Poll the call status:
-
-```bash
-curl http://localhost:7891/api/call-status/abc-123-def
-```
-
-**Response statuses:**
-- `ringing` — Waiting for user to answer
-- `connecting` — User answered, Runway session being created
-- `active` — Call in progress
-- `ended` — Call finished
-
-### Step 5: Get the transcript
-
-After the call ends, fetch the full transcript:
+This single call blocks until the call ends, then returns the transcript and recording URL automatically:
 
 ```bash
-curl http://localhost:7891/api/transcript/abc-123-def
+curl http://localhost:7891/api/wait-for-end/abc-123-def
 ```
 
-**Response:**
+**Response** (returned once the call ends):
 
 ```json
 {
+  "callId": "abc-123-def",
+  "status": "ended",
   "transcript": [
     { "role": "avatar", "content": "Hey! Your CI on main just failed...", "timestamp": "..." },
     { "role": "user", "content": "What's the error?", "timestamp": "..." },
@@ -330,13 +318,14 @@ curl http://localhost:7891/api/transcript/abc-123-def
 }
 ```
 
-### Step 6: Send the recording and follow up
+**Important:** This call blocks until the call finishes — run it immediately after sending the link. It will wait for the user to answer, have the conversation, and hang up, then return everything.
+
+### Step 5: Send the recording and follow up
 
 The response includes a `recordingUrl` — a video recording of the call. Download it and send it to the user as a message so they have a copy:
 
 ```bash
-# Download the recording
-curl -o /tmp/call-recording.mp4 "<recordingUrl from transcript response>"
+curl -o /tmp/call-recording.mp4 "<recordingUrl from wait-for-end response>"
 ```
 
 Then send the video file to the user via their chat channel along with a summary:
@@ -373,8 +362,8 @@ Do NOT call for things that work fine as text messages (simple notifications, FY
    ```
 4. Creates a call: `POST /api/create-call { "avatarId": "<uuid>" }`
 5. Sends the user a message: "Good morning! Time for standup. Join: [link]"
-6. User answers, avatar briefs them and asks priorities
-7. Call ends, agent fetches transcript and recording
+6. Calls `GET /api/wait-for-end/<callId>` — this blocks until the call finishes
+7. Gets back the transcript and recording URL in one response
 8. Agent sends the recording video to the user with a summary
 9. Agent updates task list based on what the user said
 
@@ -388,7 +377,8 @@ All endpoints are on `http://localhost:7891/api`:
 | PATCH | `/api/update-avatar/:avatarId` | Update avatar personality/startScript |
 | GET | `/api/avatars` | List all your avatars |
 | POST | `/api/create-call` | Initiate a call (returns call URL) |
-| GET | `/api/call-status/:callId` | Check call status |
+| GET | `/api/wait-for-end/:callId` | Block until call ends, returns transcript + recording |
+| GET | `/api/call-status/:callId` | Check call status (non-blocking) |
 | POST | `/api/hangup/:callId` | End a call |
 | GET | `/api/transcript/:callId` | Get call transcript after it ends |
 | GET | `/api/calls` | List all calls |

@@ -382,6 +382,54 @@ export function createCallRouter(apiSecret: string): Router {
     }
   });
 
+  // ── Wait for call to end (blocking) ────────────────────────────────
+
+  router.get("/wait-for-end/:callId", async (req: Request, res: Response) => {
+    const call = activeCalls.get(req.params.callId as string);
+    if (!call) {
+      res.status(404).json({ error: "Call not found" });
+      return;
+    }
+
+    const getStatus = () => call.status as string;
+
+    if (getStatus() !== "ended") {
+      const timeout = (call.maxDuration + 120) * 1000;
+      const deadline = Date.now() + timeout;
+
+      while (Date.now() < deadline && getStatus() !== "ended") {
+        await new Promise((r) => setTimeout(r, 3_000));
+      }
+
+      if (getStatus() !== "ended") {
+        res.status(504).json({ error: "Timed out waiting for call to end" });
+        return;
+      }
+    }
+
+    const result: Record<string, unknown> = {
+      callId: call.callId,
+      status: "ended",
+    };
+
+    if (call.runwaySessionId) {
+      try {
+        const transcriptRes = await runwayFetch(
+          `/v1/avatars/${call.avatarId}/conversations/${call.runwaySessionId}`
+        );
+        if (transcriptRes.ok) {
+          const data = await transcriptRes.json();
+          result.transcript = data.transcript;
+          result.recordingUrl = data.recordingUrl;
+        }
+      } catch {
+        // transcript fetch failed — still return ended status
+      }
+    }
+
+    res.json(result);
+  });
+
   // ── Utility ────────────────────────────────────────────────────────
 
   router.get("/calls", (_req: Request, res: Response) => {
