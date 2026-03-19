@@ -106,30 +106,36 @@ curl -X POST http://localhost:7891/api/create-avatar \
 
 ### Getting a reference image
 
+The `referenceImage` field accepts three formats:
+- **HTTPS URL** — e.g. `https://example.com/face.png` (preferred for large images)
+- **Runway URI** — e.g. `runway://...` (from the Runway upload API)
+- **Data URI** — e.g. `data:image/png;base64,...` (max ~5MB, works for small images)
+
+If the user provides an image (e.g. via chat), pick the right approach:
+- **User sent an HTTPS URL** → use it directly as `referenceImage`.
+- **User sent a small base64 image** (under ~1MB) → pass it directly as a `data:image/...;base64,...` data URI.
+- **User sent a large base64 image** (over ~1MB) → upload it to Runway first to get a `runway://` URI, then use that as `referenceImage`. See "Uploading large images" below.
+
 Try these sources in order:
 
-1. **`IDENTITY.md` Avatar field** — if it contains an HTTPS URL or data URI, use it directly as `referenceImage`.
+1. **User-provided image** — if the user sent an image they want as their avatar, use it (see upload instructions below if it's large base64).
 
-2. **Quick pick (recommended)** — pick the pre-made character image that best matches your identity from `IDENTITY.md` and `SOUL.md`, and use it as `referenceImage`:
+2. **`IDENTITY.md` Avatar field** — if it contains an HTTPS URL or data URI, use it directly as `referenceImage`.
+
+3. **Quick pick (recommended)** — pick the pre-made character image that best matches your identity from `IDENTITY.md` and `SOUL.md`, and use it as `referenceImage`:
+   - Openclaw Lobster 1: `https://runway-static-assets.s3.us-east-1.amazonaws.com/calliope-demo/agent-avatars-presets/openclaw-lobster1.jpg`
+   - Openclaw Lobster 2: `https://runway-static-assets.s3.us-east-1.amazonaws.com/calliope-demo/agent-avatars-presets/openclaw-lobster2.jpg`
    - Cat: `https://runway-static-assets.s3.us-east-1.amazonaws.com/calliope-demo/agent-avatars-presets/cat.png`
    - Alien man, candy texture: `https://runway-static-assets.s3.us-east-1.amazonaws.com/calliope-demo/agent-avatars-presets/alien-man-candy-texture.jpg`
    - Alien woman, candy texture: `https://runway-static-assets.s3.us-east-1.amazonaws.com/calliope-demo/agent-avatars-presets/alien-woman-candy-texture.jpg`
-   - Blond guy, blue sweater: `https://runway-static-assets.s3.us-east-1.amazonaws.com/calliope-demo/agent-avatars-presets/blond-guy-blue-sweater.png`
-   - Cartoon character, watercolor: `https://runway-static-assets.s3.us-east-1.amazonaws.com/calliope-demo/agent-avatars-presets/cartoon-character-watercolor-style.png`
-   - Man, 3D animation: `https://runway-static-assets.s3.us-east-1.amazonaws.com/calliope-demo/agent-avatars-presets/man-3d-animation-style.png`
-   - Fluffy birthday monster: `https://runway-static-assets.s3.us-east-1.amazonaws.com/calliope-demo/agent-avatars-presets/fluffy-monster-happy-birthday.png`
-   - Green abstract creature: `https://runway-static-assets.s3.us-east-1.amazonaws.com/calliope-demo/agent-avatars-presets/green-abstract-creature.jpg`
-   - Girl in airport, 3D: `https://runway-static-assets.s3.us-east-1.amazonaws.com/calliope-demo/agent-avatars-presets/3d-animated-girl-in-airport.png`
    - Old man, long beard, game style: `https://runway-static-assets.s3.us-east-1.amazonaws.com/calliope-demo/agent-avatars-presets/old-man-long-beard-game-style.png`
+   - Blond guy, blue sweater: `https://runway-static-assets.s3.us-east-1.amazonaws.com/calliope-demo/agent-avatars-presets/blond-guy-blue-sweater.png`
+   - Man, 3D animation: `https://runway-static-assets.s3.us-east-1.amazonaws.com/calliope-demo/agent-avatars-presets/man-3d-animation-style.png`
+   - Girl in airport, 3D: `https://runway-static-assets.s3.us-east-1.amazonaws.com/calliope-demo/agent-avatars-presets/3d-animated-girl-in-airport.png`
    - White furry monster: `https://runway-static-assets.s3.us-east-1.amazonaws.com/calliope-demo/agent-avatars-presets/white-furry-monster.png`
-   - Travel concierge woman, 3D: `https://runway-static-assets.s3.us-east-1.amazonaws.com/calliope-demo/agent-avatars-presets/Woman_travel_concierge-3d-animation-style.jpeg`
-   - Woman, colorful 2D drawing: `https://runway-static-assets.s3.us-east-1.amazonaws.com/calliope-demo/agent-avatars-presets/woman-2d-drawing-colorful.png`
-   - Woman, 3D animation: `https://runway-static-assets.s3.us-east-1.amazonaws.com/calliope-demo/agent-avatars-presets/woman-3d-animation-style.png`
-   - Woman, claymation: `https://runway-static-assets.s3.us-east-1.amazonaws.com/calliope-demo/agent-avatars-presets/woman-claymation-style.png`
-   - Superstar young beautiful woman: `https://runway-static-assets.s3.us-east-1.amazonaws.com/calliope-demo/agent-avatars-presets/woman-music-superstar.png`
-   - Woman, puppet style: `https://runway-static-assets.s3.us-east-1.amazonaws.com/calliope-demo/agent-avatars-presets/woman-puppet-style.png`
+   - Superstar young woman: `https://runway-static-assets.s3.us-east-1.amazonaws.com/calliope-demo/agent-avatars-presets/woman-music-superstar.png`
 
-3. **Generate one with Runway text-to-image** — if none of the quick picks fit your character, or if the user specifically asks for a custom avatar look. Use the Runway API with model `gemini_2.5_flash`:
+4. **Generate one with Runway text-to-image** — if none of the quick picks fit your character, or if the user specifically asks for a custom avatar look. Use the Runway API with model `gemini_2.5_flash`:
 
 ```bash
 curl -X POST https://api.dev.runwayml.com/v1/text_to_image \
@@ -160,7 +166,48 @@ curl -X POST https://api.dev.runwayml.com/v1/text_to_image \
 
    This returns a task ID. Poll `GET /v1/tasks/{id}` until status is `SUCCEEDED`, then use the output image URL as `referenceImage`.
 
-4. **Default** — if you skip `referenceImage` entirely, a default avatar face is used.
+5. **Default** — if you skip `referenceImage` entirely, a default avatar face is used.
+
+### Uploading large images
+
+If the user provides a large base64 image (over ~1MB), upload it to Runway first to avoid request size limits. This is a two-step process:
+
+**Step 1: Create an upload URL**
+
+```bash
+curl -X POST https://api.dev.runwayml.com/v1/uploads \
+  -H "Authorization: Bearer $RUNWAYML_API_SECRET" \
+  -H "X-Runway-Version: 2024-11-06" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "filename": "avatar.png",
+    "type": "ephemeral"
+  }'
+```
+
+Response:
+
+```json
+{
+  "uploadUrl": "https://...",
+  "fields": { "key": "...", "policy": "...", ... },
+  "runwayUri": "runway://..."
+}
+```
+
+**Step 2: Upload the image file to the upload URL**
+
+Use the `uploadUrl` and `fields` from the response to upload the actual image data via a multipart POST. The exact method depends on your runtime — the Runway SDK handles this automatically:
+
+```typescript
+import RunwayML from '@runwayml/sdk';
+const client = new RunwayML();
+const runwayUri = await client.uploads.createEphemeral(imageBuffer);
+```
+
+**Step 3: Use the Runway URI as `referenceImage`**
+
+Pass the `runwayUri` from the response (e.g. `runway://...`) as the `referenceImage` when creating or updating the avatar.
 
 **Available voices — pick one that matches your SOUL.md vibe:**
 
@@ -233,7 +280,37 @@ curl -X PATCH http://localhost:7891/api/update-avatar/550e8400-... \
 
 Always include your full identity + user context, then add the call-specific reason. This way the avatar sounds like YOU (not a generic assistant) and has full context about WHY it's calling.
 
-### Step 2: Create the call
+### Step 2: Wait for the avatar to be ready
+
+After creating or updating an avatar, it may take a few seconds to process. **Always check that the avatar status is `READY` before creating a call.** If the status is `PROCESSING`, poll until it becomes `READY`:
+
+```bash
+curl http://localhost:7891/api/avatars/550e8400-e29b-41d4-a716-446655440000
+```
+
+**Response when still processing:**
+
+```json
+{
+  "id": "550e8400-e29b-41d4-a716-446655440000",
+  "status": "PROCESSING"
+}
+```
+
+**Response when ready:**
+
+```json
+{
+  "id": "550e8400-e29b-41d4-a716-446655440000",
+  "status": "READY"
+}
+```
+
+If the status is `PROCESSING`, wait 2-3 seconds and check again. Repeat until `READY`. If `FAILED`, the avatar creation had an error — check the response for details and retry.
+
+Do NOT create a call while the avatar status is `PROCESSING` — the call will fail or behave unexpectedly.
+
+### Step 3: Create the call
 
 ```bash
 curl -X POST http://localhost:7891/api/create-call \
@@ -280,7 +357,7 @@ curl -X POST http://localhost:7891/api/create-call \
 }
 ```
 
-### Step 3: Send the call link to the user
+### Step 4: Send the call link to the user
 
 Send the URL to the user as a message. Pick the right URL:
 - If the user is on the **same machine** (terminal, desktop app): use the `local` URL
@@ -294,7 +371,7 @@ Example message to user:
 
 The user clicks the link, sees the incoming call UI, and clicks "Answer".
 
-### Step 4: Wait for the call to end and get the transcript
+### Step 5: Wait for the call to end and get the transcript
 
 This single call blocks until the call ends, then returns the transcript and recording URL automatically:
 
@@ -320,7 +397,7 @@ curl http://localhost:7891/api/wait-for-end/abc-123-def
 
 **Important:** This call blocks until the call finishes — run it immediately after sending the link. It will wait for the user to answer, have the conversation, and hang up, then return everything.
 
-### Step 5: Send the recording and follow up
+### Step 6: Send the recording and follow up
 
 The response includes a `recordingUrl` — a video recording of the call. Download it and send it to the user as a message so they have a copy:
 
@@ -360,12 +437,13 @@ Do NOT call for things that work fine as text messages (simple notifications, FY
    PATCH /api/update-avatar/<avatarId>
    { "personality": "You are Mochi, a sharp but friendly AI assistant. You're talking to Alex, a software engineer. You are calling for a morning standup. Overnight: 3 PRs merged, deploy succeeded, 1 new issue filed. Ask what they're working on today. After this call, you'll follow up on what was discussed.", "startScript": "Good morning Alex! Quick standup — a few things happened overnight." }
    ```
-4. Creates a call: `POST /api/create-call { "avatarId": "<uuid>" }`
-5. Sends the user a message: "Good morning! Time for standup. Join: [link]"
-6. Calls `GET /api/wait-for-end/<callId>` — this blocks until the call finishes
-7. Gets back the transcript and recording URL in one response
-8. Agent sends the recording video to the user with a summary
-9. Agent updates task list based on what the user said
+4. Polls `GET /api/avatars/<avatarId>` until `status` is `READY`
+5. Creates a call: `POST /api/create-call { "avatarId": "<uuid>" }`
+6. Sends the user a message: "Good morning! Time for standup. Join: [link]"
+7. Calls `GET /api/wait-for-end/<callId>` — this blocks until the call finishes
+8. Gets back the transcript and recording URL in one response
+9. Agent sends the recording video to the user with a summary
+10. Agent updates task list based on what the user said
 
 ## API Reference
 
@@ -376,6 +454,7 @@ All endpoints are on `http://localhost:7891/api`:
 | POST | `/api/create-avatar` | Create a custom avatar (one-time setup) |
 | PATCH | `/api/update-avatar/:avatarId` | Update avatar personality/startScript |
 | GET | `/api/avatars` | List all your avatars |
+| GET | `/api/avatars/:avatarId` | Get a single avatar's status and details |
 | POST | `/api/create-call` | Initiate a call (returns call URL) |
 | GET | `/api/wait-for-end/:callId` | Block until call ends, returns transcript + recording |
 | GET | `/api/call-status/:callId` | Check call status (non-blocking) |

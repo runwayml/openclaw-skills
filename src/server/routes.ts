@@ -154,6 +154,22 @@ export function createCallRouter(apiSecret: string): Router {
     }
   });
 
+  router.get("/avatars/:avatarId", async (req: Request, res: Response) => {
+    const avatarId = req.params.avatarId as string;
+    try {
+      const avatarRes = await runwayFetch(`/v1/avatars/${avatarId}`);
+      if (!avatarRes.ok) {
+        const err = await avatarRes.json();
+        res.status(avatarRes.status).json({ error: err });
+        return;
+      }
+      const data = await avatarRes.json();
+      res.json(data);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   // ── Call Management ────────────────────────────────────────────────
 
   router.post("/create-call", async (req: Request, res: Response) => {
