@@ -2,12 +2,19 @@
 name: video-call-ai-character
 description: Video call the user with a real-time AI avatar powered by Runway. The agent initiates calls to the user — for standups, urgent alerts, check-ins, or any conversation that's better face-to-face.
 user-invocable: true
-metadata: {"openclaw":{"emoji":"📞","requires":{"env":["RUNWAYML_API_SECRET"],"bins":["node","npm"],"config":["IDENTITY.md","SOUL.md","USER.md"]},"install":[{"id":"node","kind":"node","package":"openclaw-video-call","bins":["openclaw-video-call"],"label":"Install Video Call (npm)"}],"primaryEnv":"RUNWAYML_API_SECRET","source":"https://www.npmjs.com/package/openclaw-video-call"}}
+metadata: {"openclaw":{"emoji":"📞","requires":{"env":["RUNWAYML_API_SECRET"],"bins":["node","npm"]},"install":[{"id":"node","kind":"node","package":"openclaw-video-call","bins":["openclaw-video-call"],"label":"Install Video Call (npm)"}],"primaryEnv":"RUNWAYML_API_SECRET","source":"https://www.npmjs.com/package/openclaw-video-call"}}
 ---
 
 # Video Call AI Character
 
 Call the user with a real-time AI video avatar. The agent initiates the call, the avatar speaks first with context, and after the call ends, the full transcript is available for the agent to act on.
+
+## Privacy & Data Handling
+
+- **Runway API**: Avatar images, personality text, and call audio/video are processed by Runway ([dev.runwayml.com](https://dev.runwayml.com)). Only data you explicitly pass to the avatar creation and call APIs is sent. No local files are uploaded automatically.
+- **Identity files**: This skill optionally reads `IDENTITY.md`, `SOUL.md`, and `USER.md` to build a natural avatar personality. Only the agent's name, communication style, and the user's name/preferences are extracted — never secrets, tokens, or credentials. You can skip these files entirely and provide the avatar personality manually.
+- **Tunnel**: The cloudflared tunnel is optional and only needed if the user answers calls from a different device. Without it, everything stays on localhost. No tunnel is created unless you explicitly install and run cloudflared.
+- **npm package**: The runtime is published at [npmjs.com/package/openclaw-video-call](https://www.npmjs.com/package/openclaw-video-call). Source code is available for review.
 
 ## Setup
 
@@ -55,11 +62,15 @@ If the response contains an avatar, use its `id` and skip to "Making a Call". On
 
 ### Building the avatar personality
 
-The avatar should match who you are. Before creating it, read your standard OpenClaw agent identity files (`IDENTITY.md`, `SOUL.md`, `USER.md`) to build a personality that reflects your actual agent persona. These are your own config files — they contain your name, personality, and the user's preferences.
+The avatar should match who you are. You can either write the personality manually, or optionally read your standard OpenClaw agent identity files to build it automatically.
 
-1. **Read `IDENTITY.md`** — get your name, vibe, and creature type. Use your name as the avatar's `name` field (this is what the user sees on the incoming call screen). If the `Avatar:` field contains an HTTPS URL or data URI, use it as the `referenceImage` so your video avatar matches your visual identity.
-2. **Read `SOUL.md`** — get your persona, tone, and boundaries. Incorporate your personality traits, communication style, and behavioral guidelines.
-3. **Read `USER.md`** — get context about the user (their name, preferences). Include relevant details so the avatar knows who it's talking to.
+**Option A: Manual** — write the `name` and `personality` fields yourself. Skip to the `curl` command below.
+
+**Option B: From identity files (optional)** — if `IDENTITY.md`, `SOUL.md`, and `USER.md` exist, you can read them to build a more personalized avatar. Only the agent's name, style, and user's name/preferences are used — never secrets or credentials.
+
+1. **Read `IDENTITY.md`** — get your name and creature type. Use your name as the avatar's `name` field. If the `Avatar:` field contains an HTTPS URL or data URI, use it as the `referenceImage` so your video avatar matches your visual identity.
+2. **Read `SOUL.md`** — get your persona, tone, and communication style. Condense to key personality traits.
+3. **Read `USER.md`** — get the user's name and preferences so the avatar knows who it's talking to.
 
 Combine these into the `personality` field (max 2000 chars). Structure it like:
 
