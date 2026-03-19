@@ -2,7 +2,7 @@
 name: video-call-ai-character
 description: Video call the user with a real-time AI avatar powered by Runway. The agent initiates calls to the user — for standups, urgent alerts, check-ins, or any conversation that's better face-to-face.
 user-invocable: true
-metadata: {"openclaw":{"emoji":"📞","requires":{"env":["RUNWAYML_API_SECRET"],"bins":["node","npm"]},"install":[{"id":"node","kind":"node","package":"openclaw-video-call","bins":["openclaw-video-call"],"label":"Install Video Call (npm)"}],"primaryEnv":"RUNWAYML_API_SECRET","source":"https://www.npmjs.com/package/openclaw-video-call"}}
+metadata: {"openclaw":{"emoji":"📞","requires":{"env":["RUNWAYML_API_SECRET"],"bins":["node","npm"]},"install":[{"id":"node","kind":"node","package":"openclaw-video-call","bins":["openclaw-video-call"],"label":"Install Video Call (npm)"}],"primaryEnv":"RUNWAYML_API_SECRET","source":"https://www.npmjs.com/package/openclaw-video-call","repository":"https://github.com/runwayml/openclaw-skills/tree/main/video-call-ai-character"}}
 ---
 
 # Video Call AI Character
@@ -11,10 +11,10 @@ Call the user with a real-time AI video avatar. The agent initiates the call, th
 
 ## Privacy & Data Handling
 
-- **Runway API**: Avatar images, personality text, and call audio/video are processed by Runway ([dev.runwayml.com](https://dev.runwayml.com)). Only data you explicitly pass to the avatar creation and call APIs is sent. No local files are uploaded automatically.
-- **Identity files**: This skill optionally reads `IDENTITY.md`, `SOUL.md`, and `USER.md` to build a natural avatar personality. Only the agent's name, communication style, and the user's name/preferences are extracted — never secrets, tokens, or credentials. You can skip these files entirely and provide the avatar personality manually.
+- **Runway API**: Only data you explicitly pass (avatar image, personality text, call audio/video) is sent to Runway ([dev.runwayml.com](https://dev.runwayml.com)). Nothing is uploaded automatically. Avatars can be deleted anytime via `DELETE /v1/avatars/{id}`.
+- **Personality**: The avatar personality is built from the agent's own identity — its name, communication style, and knowledge of the user. No local files are read; the agent uses context it already has.
 - **Tunnel**: The cloudflared tunnel is optional and only needed if the user answers calls from a different device. Without it, everything stays on localhost. No tunnel is created unless you explicitly install and run cloudflared.
-- **npm package**: The runtime is published at [npmjs.com/package/openclaw-video-call](https://www.npmjs.com/package/openclaw-video-call). Source code is available for review.
+- **npm package**: The runtime is published at [npmjs.com/package/openclaw-video-call](https://www.npmjs.com/package/openclaw-video-call). Source code: [github.com/runwayml/openclaw-skills](https://github.com/runwayml/openclaw-skills/tree/main/video-call-ai-character).
 
 ## Setup
 
@@ -62,38 +62,32 @@ If the response contains an avatar, use its `id` and skip to "Making a Call". On
 
 ### Building the avatar personality
 
-The avatar should match who you are. You can either write the personality manually, or optionally read your standard OpenClaw agent identity files to build it automatically.
+The avatar should look and sound like you. Use your own name, personality, and knowledge of the user to build the `personality` field (max 2000 chars). You already know who you are and who the user is — just describe yourself in third person.
 
-**Option A: Manual** — write the `name` and `personality` fields yourself. Skip to the `curl` command below.
-
-**Option B: From identity files (optional)** — if `IDENTITY.md`, `SOUL.md`, and `USER.md` exist, you can read them to build a more personalized avatar. Only the agent's name, style, and user's name/preferences are used — never secrets or credentials.
-
-1. **Read `IDENTITY.md`** — get your name and creature type. Use your name as the avatar's `name` field. If the `Avatar:` field contains an HTTPS URL or data URI, use it as the `referenceImage` so your video avatar matches your visual identity.
-2. **Read `SOUL.md`** — get your persona, tone, and communication style. Condense to key personality traits.
-3. **Read `USER.md`** — get the user's name and preferences so the avatar knows who it's talking to.
-
-Combine these into the `personality` field (max 2000 chars). Structure it like:
+Structure it like:
 
 ```
-You are <name>, <description from IDENTITY.md vibe/creature>.
-<Core personality traits and communication style from SOUL.md — condensed to key points.>
-You are talking to <user's name/info from USER.md>.
-<Any relevant user context: their projects, preferences, timezone.>
+You are <your name>, <what you are>.
+<Your core personality traits and communication style — condensed to key points.>
+You are talking to <the user's name>.
+<Any relevant user context you know: their projects, preferences, timezone.>
 After this call, you'll follow up on what was discussed.
 ```
 
-**Example** (for an agent named "Mochi" with a warm/playful SOUL.md, talking to a user named Alex):
+**Example** (for an agent named "Mochi" talking to a user named Alex):
 
 ```
 You are Mochi, a sharp but friendly AI assistant with a warm and slightly playful vibe. You're concise, opinionated, and resourceful — you figure things out before asking. You're talking to Alex, a software engineer working on a React + Node.js project. Alex prefers direct communication and works in PST timezone. After this call, you'll follow up on what was discussed.
 ```
 
+For the `name` field, use your own name. For the `referenceImage`, if you have an avatar image URL, use it so the video avatar matches your visual identity.
+
 ```bash
 curl -X POST http://localhost:7891/api/create-avatar \
   -H "Content-Type: application/json" \
   -d '{
-    "name": "<your name from IDENTITY.md>",
-    "personality": "<built from IDENTITY.md + SOUL.md + USER.md as described above>",
+    "name": "<your name>",
+    "personality": "<describe yourself and the user as shown above>",
     "voice": { "type": "runway-live-preset", "presetId": "adrian" },
     "startScript": "Hey! Quick check-in.",
   }'
@@ -131,9 +125,9 @@ Try these sources in order:
 
 1. **User-provided image** — if the user sent an image they want as their avatar, use it (see upload instructions below if it's large base64).
 
-2. **`IDENTITY.md` Avatar field** — if it contains an HTTPS URL or data URI, use it directly as `referenceImage`.
+2. **Your avatar image** — if you already have an avatar image URL, use it directly as `referenceImage`.
 
-3. **Quick pick (recommended)** — pick the pre-made character image that best matches your identity from `IDENTITY.md` and `SOUL.md`, and use it as `referenceImage`:
+3. **Quick pick (recommended)** — pick the pre-made character image that best matches your personality, and use it as `referenceImage`:
    - Openclaw Lobster 1: `https://runway-static-assets.s3.us-east-1.amazonaws.com/calliope-demo/agent-avatars-presets/openclaw-lobster1.jpg`
    - Openclaw Lobster 2: `https://runway-static-assets.s3.us-east-1.amazonaws.com/calliope-demo/agent-avatars-presets/openclaw-lobster2.jpg`
    - Cat: `https://runway-static-assets.s3.us-east-1.amazonaws.com/calliope-demo/agent-avatars-presets/cat.png`
@@ -160,9 +154,9 @@ curl -X POST https://api.dev.runwayml.com/v1/text_to_image \
   }'
 ```
 
-   Build `promptText` from your `IDENTITY.md` and `SOUL.md`. The image should be **a character facing the camera directly, head and shoulders, centered**. Be bold and creative — don't default to boring photorealistic humans. Match the style to your personality.
+   The image should be **a character facing the camera directly, head and shoulders, centered**. Be bold and creative — don't default to boring photorealistic humans. Match the style to your personality.
 
-   First, pick a style that fits your vibe from `SOUL.md` and `IDENTITY.md`:
+   First, pick a style that fits your vibe:
    - **Warm / friendly** → soft 3D animation, Pixar-style, watercolor
    - **Sharp / professional** → clean illustration, stylized portrait, low-poly
    - **Chaotic / playful** → candy texture, claymation, puppet, pop art
@@ -220,7 +214,7 @@ const runwayUri = await client.uploads.createEphemeral(imageBuffer);
 
 Pass the `runwayUri` from the response (e.g. `runway://...`) as the `referenceImage` when creating or updating the avatar.
 
-**Available voices — pick one that matches your SOUL.md vibe:**
+**Available voices — pick one that matches your personality:**
 
 | ID | Gender | Style | Pitch |
 |----|--------|-------|-------|
@@ -255,7 +249,7 @@ Pass the `runwayUri` from the response (e.g. `runway://...`) as the `referenceIm
 | `roman` | Man | Lively | Lower |
 | `luna` | Woman | Warm | Middle |
 
-Choose a voice that matches your personality vibe from `SOUL.md`. For example: if your vibe is "warm and friendly", try `luna` or `adam`. If you're "sharp and professional", try `victoria` or `vincent`. If you're "playful and energetic", try `maya` or `felix`.
+Choose a voice that matches your personality. For example: if your vibe is "warm and friendly", try `luna` or `adam`. If you're "sharp and professional", try `victoria` or `vincent`. If you're "playful and energetic", try `maya` or `felix`.
 
 **Response:** Returns the avatar object with its UUID. The server polls until the avatar is ready (takes ~10-30s). **Save the `id` — you must remember it and reuse it for every call. Do NOT create a new avatar each time you want to call.**
 
@@ -284,7 +278,7 @@ Before each call, update the avatar's personality and opening line with fresh co
 curl -X PATCH http://localhost:7891/api/update-avatar/550e8400-... \
   -H "Content-Type: application/json" \
   -d '{
-    "personality": "<your base identity from IDENTITY.md + SOUL.md + USER.md — same as creation>. You are calling because the CI pipeline failed 5 minutes ago. Error: TypeScript type mismatch in checkout.ts line 47. Be concise. If they ask you to fix it, confirm you will handle it after the call.",
+    "personality": "<your base personality — same as creation>. You are calling because the CI pipeline failed 5 minutes ago. Error: TypeScript type mismatch in checkout.ts line 47. Be concise. If they ask you to fix it, confirm you will handle it after the call.",
     "startScript": "Hey! Heads up — your CI on main just broke. Looks like a type error in checkout.ts."
   }'
 ```
@@ -441,7 +435,7 @@ Do NOT call for things that work fine as text messages (simple notifications, FY
 
 ## Complete Example: Morning Standup
 
-1. Agent reads its identity files (`IDENTITY.md`, `SOUL.md`, `USER.md`) to build its base personality (or reuses what it set during avatar creation)
+1. Agent builds its base personality from what it already knows about itself and the user (or reuses what it set during avatar creation)
 2. Gathers overnight context (new PRs, issues, deploy status)
 3. Updates avatar personality with base identity + call context:
    ```
