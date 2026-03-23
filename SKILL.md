@@ -1,11 +1,11 @@
 ---
-name: video-call-ai-character
+name: video-call-agent
 description: Video call the user with a real-time AI avatar powered by Runway. The agent initiates calls to the user — for standups, urgent alerts, check-ins, or any conversation that's better face-to-face.
 user-invocable: true
-metadata: {"openclaw":{"emoji":"📞","requires":{"env":["RUNWAYML_API_SECRET"],"bins":["node","npm"]},"install":[{"id":"node","kind":"node","package":"openclaw-video-call","bins":["openclaw-video-call"],"label":"Install Video Call (npm)"}],"primaryEnv":"RUNWAYML_API_SECRET","source":"https://www.npmjs.com/package/openclaw-video-call","repository":"https://github.com/runwayml/openclaw-skills/tree/main/video-call-ai-character"}}
+metadata: {"openclaw":{"emoji":"📞","requires":{"env":["RUNWAYML_API_SECRET"],"bins":["node","npm"]},"install":[{"id":"node","kind":"node","package":"openclaw-video-call","bins":["openclaw-video-call"],"label":"Install Video Call (npm)"}],"primaryEnv":"RUNWAYML_API_SECRET","source":"https://www.npmjs.com/package/openclaw-video-call","repository":"https://github.com/runwayml/openclaw-skills"}}
 ---
 
-# Video Call AI Character
+# Video Call Agent
 
 Call the user with a real-time AI video avatar. The agent initiates the call, the avatar speaks first with context, and after the call ends, the full transcript is available for the agent to act on.
 

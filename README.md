@@ -1,4 +1,4 @@
-# video-call-ai-character
+# video-call-agent
 
 An [OpenClaw](https://openclaw.com) skill that lets your AI agent **call you** with a real-time video avatar powered by [Runway](https://dev.runwayml.com).
 
@@ -19,12 +19,6 @@ Your agent initiates the call, the avatar speaks first with context, and after t
 - **Decision points** — When the agent needs your input before proceeding
 - **Complex explanations** — Walking through an error or architecture decision
 - **Status updates** — End-of-day recap, weekly summary
-
-## Install as an OpenClaw skill
-
-```bash
-openclaw skill install github:runwayml/openclaw-skills/video-call-ai-character
-```
 
 ## Requirements
 
@@ -48,7 +42,7 @@ The server starts on `http://localhost:7891` and auto-creates a Cloudflare tunne
 
 ```bash
 git clone https://github.com/runwayml/openclaw-skills.git
-cd openclaw-skills/video-call-ai-character
+cd openclaw-skills
 npm install
 export RUNWAYML_API_SECRET=your_key
 npm run dev
