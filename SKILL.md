@@ -1,13 +1,13 @@
 ---
 name: video-call-agent
-description: Video call the user with a real-time AI avatar powered by Runway. The agent initiates calls to the user — for standups, urgent alerts, check-ins, or any conversation that's better face-to-face.
+description: Start a video call with a real-time AI avatar using the Runway Characters API. The agent sends the user a call invite link — for standups, urgent alerts, check-ins, or any conversation that's better face-to-face.
 user-invocable: true
 metadata: {"openclaw":{"emoji":"📞","requires":{"env":["RUNWAYML_API_SECRET"],"bins":["node","npm"]},"install":[{"id":"node","kind":"node","package":"openclaw-video-call","bins":["openclaw-video-call"],"label":"Install Video Call (npm)"}],"primaryEnv":"RUNWAYML_API_SECRET","source":"https://www.npmjs.com/package/openclaw-video-call","repository":"https://github.com/runwayml/openclaw-skills"}}
 ---
 
 # Video Call Agent
 
-Call the user with a real-time AI video avatar. The agent initiates the call, the avatar speaks first with context, and after the call ends, the full transcript is available for the agent to act on.
+Start a video call with a real-time AI avatar. The agent sends the user a call invite link, the avatar speaks first with context, and after the call ends, the full transcript is available for the agent to act on.
 
 ## Privacy & Data Handling
 
@@ -26,7 +26,7 @@ Call the user with a real-time AI video avatar. The agent initiates the call, th
 
 ### 2. (Optional) Install cloudflared for remote calls
 
-If the user might answer calls from their phone (e.g. via WhatsApp), install cloudflared for auto-tunneling:
+If the user might answer calls from their phone (e.g. via Telegram or WhatsApp), install cloudflared for auto-tunneling:
 
 ```bash
 brew install cloudflared
